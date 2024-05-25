@@ -22,6 +22,39 @@ async function readImage(file: string) {
   return { data, width, height };
 }
 
+function reshapeArray1DTo2D(arr: Uint8Array, rows: number, cols: number) {
+    if (arr.length !== rows * cols) {
+        throw new Error("The total number of elements does not match the specified dimensions.");
+    }
+
+    let reshapedArray = [];
+    for (let i = 0; i < rows; i++) {
+        let row = [];
+        for (let j = 0; j < cols; j++) {
+            row.push(arr[i * cols + j]);
+        }
+        reshapedArray.push(row);
+    }
+    return reshapedArray;
+}
+
+const cropImage = (
+  reshaped: number[][],
+  x: number,
+  y: number,
+  croppedWidth: number,
+  croppedHeight: number
+) => {
+  const output = new Uint8Array(croppedHeight * croppedWidth)
+  let pos = 0
+  for (let i = 0; i < croppedHeight; i++) {
+    for (let j = 0; j < croppedWidth; j++) {
+      output[pos++] = reshaped[y + i][x + j]
+    }
+  }
+  return output
+};
+
 export async function GET(
    req: NextRequest,
    { params }: { params: { slug: string}}
@@ -55,10 +88,10 @@ export async function GET(
   const palette = [palette1, palette2, palette3].flat()
 
   //
-  const images = [index1, index2, index3]
+  const images = [index1, index2, index3, index1]
 
   // Create a buffer that has all 3 side-by-side
-  const full = new Uint8Array(width1 * 3 * height1)
+  const full = new Uint8Array(width1 * 4 * height1)
   let pos = 0
 
   for (let i = 0; i < height1; i++) {
@@ -68,11 +101,14 @@ export async function GET(
       }
     })
   }
+  const reshaped = reshapeArray1DTo2D(full, height1, width1 * 4)
 
   const gif = GIFEncoder()
-  // Write the full buffer as a frame
-  //gif.writeFrame(full, width1 * 3, height1, { palette, delay: 500 })
-  gif.writeFrame(full, width1 * 3, height1, { palette })
+  for (let i = 0; i < 30; i++) {
+    gif.writeFrame(cropImage(reshaped, i * 80, 0, width1, height1),
+      width1, height1, { palette, delay: 250 })
+  }
+  //gif.writeFrame(full, width1 * 3, height1, { palette })
   gif.finish()
 
   const response = new NextResponse(gif.bytesView());
