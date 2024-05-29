@@ -102,11 +102,22 @@ export async function GET(
     })
   }
   const reshaped = reshapeArray1DTo2D(full, height1, width1 * 4)
+  
+  // Compute positions for the strips
+  const topHeight = 267, midHeight = 267, botHeight = 266
+  const midStart = topHeight, botStart = topHeight + midHeight
+  const frmSize = width1 * height1
 
   const gif = GIFEncoder()
-  for (let i = 0; i < 30; i++) {
-    gif.writeFrame(cropImage(reshaped, i * 80, 0, width1, height1),
-      width1, height1, { palette, delay: 250 })
+  for (let i = 0; i < 240; i++) {
+    const top = cropImage(reshaped, i * 10, 0, width1, topHeight)
+    const mid = cropImage(reshaped, 800, midStart, width1, midHeight)
+    const bot = cropImage(reshaped, 1600, botStart, width1, botHeight)
+    const frm = new Uint8Array(frmSize)
+    frm.set(top, 0);
+    frm.set(mid, top.length);
+    frm.set(bot, top.length + mid.length);
+    gif.writeFrame(frm, width1, height1, { palette, delay: 20 })
   }
   //gif.writeFrame(full, width1 * 3, height1, { palette })
   gif.finish()
