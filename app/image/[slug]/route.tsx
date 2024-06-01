@@ -61,65 +61,72 @@ export async function GET(
 ) {
   //const searchParams = req.nextUrl.searchParams
 
-  // Load the image
-  let imgPath1 = path.join(process.cwd(), 'public/square_red.png');
-  const { data: data1, width: width1, height: height1 } = await readImage(imgPath1)
-  const palette1 = quantize(data1, 256);
-  const index1 = applyPalette(data1, palette1, 'rgb444');
+  const imageFiles = [
+    "public/ghost.png",
+    "public/sea-monster.png",
+    //"public/square_green.png",
+    //"public/square_blue.png",
+  ]
+  const imageBuffers = []
+  const imagePalettes = []
 
-  let imgPath2 = path.join(process.cwd(), 'public/square_green.png');
-  const { data: data2, width: width2, height: height2 } = await readImage(imgPath2)
-  const palette2 = quantize(data2, 256);
-  const index2 = applyPalette(data2, palette2, 'rgb444');
+  let combinedPaletteLength = 0
+  const imgWidth = 800, imgHeight = 800
 
-  let imgPath3 = path.join(process.cwd(), 'public/square_blue.png');
-  const { data: data3, width: width3, height: height3 } = await readImage(imgPath3)
-  const palette3 = quantize(data3, 356);
-  const index3 = applyPalette(data3, palette3, 'rgb444');
-
-  for (let i = 0; i < index2.length; i++) {
-    index2[i] += palette1.length
+  for (let i = 0; i < imageFiles.length; i++) {
+    const fullPath = path.join(process.cwd(), imageFiles[i]);
+    const { data } = await readImage(fullPath)
+    const palette = quantize(data, 32);
+    const index = applyPalette(data, palette, 'rgb444')
+    for (let j = 0; j < index.length; j++) {
+      index[j] += combinedPaletteLength
+    }
+    imageBuffers.push(index);
+    imagePalettes.push(palette)
+    combinedPaletteLength += palette.length
   }
 
-  for (let i = 0; i < index3.length; i++) {
-    index3[i] += (palette1.length + palette2.length)
-  }
-
-  const palette = [palette1, palette2, palette3].flat()
+  const palette = imagePalettes.flat()
+  palette.push([0, 0, 0])
 
   //
-  const images = [index1, index2, index3, index1]
+  imageBuffers.push(imageBuffers[0])
+  const images = imageBuffers
 
-  // Create a buffer that has all 3 side-by-side
-  const full = new Uint8Array(width1 * 4 * height1)
+  // Create a buffer that has all images side-by-side
+  const fullWidth = imgWidth * images.length
+  const fullHeight = imgHeight
+  const full = new Uint8Array(fullWidth * fullHeight)
   let pos = 0
 
-  for (let i = 0; i < height1; i++) {
+  for (let i = 0; i < imgHeight; i++) {
     images.forEach(img => {
-      for (let j = 0; j < width1; j++) {
-        full[pos++] = img[(i * height1) + j]
+      for (let j = 0; j < imgWidth; j++) {
+        full[pos++] = img[(i * imgHeight) + j]
       }
     })
   }
-  const reshaped = reshapeArray1DTo2D(full, height1, width1 * 4)
+  const reshaped = reshapeArray1DTo2D(full, fullHeight, fullWidth)
   
   // Compute positions for the strips
-  const topHeight = 267, midHeight = 267, botHeight = 266
-  const midStart = topHeight, botStart = topHeight + midHeight
-  const frmSize = width1 * height1
+  const frm = new Uint8Array(imgWidth * imgHeight)
+  const blank = new Uint8Array(800 * 200).fill(palette.length - 1)
 
   const gif = GIFEncoder()
-  for (let i = 0; i < 240; i++) {
-    const top = cropImage(reshaped, i * 10, 0, width1, topHeight)
-    const mid = cropImage(reshaped, 800, midStart, width1, midHeight)
-    const bot = cropImage(reshaped, 1600, botStart, width1, botHeight)
-    const frm = new Uint8Array(frmSize)
-    frm.set(top, 0);
-    frm.set(mid, top.length);
-    frm.set(bot, top.length + mid.length);
-    gif.writeFrame(frm, width1, height1, { palette, delay: 20 })
+  for (let i = 0; i < (fullWidth - 800) / 10; i++) {
+    const a = cropImage(reshaped, 0, 0, imgWidth, 200)
+    const b = cropImage(reshaped, i * 10, 200, imgWidth, 200)
+    const c = blank
+    const d = blank
+    //const c = cropImage(reshaped, 1600, 400, imgWidth, 200)
+    //const d = cropImage(reshaped, 0, 600, imgWidth, 200)
+    frm.set(a, 0);
+    frm.set(b, a.length);
+    frm.set(c, a.length + b.length);
+    frm.set(d, a.length + b.length + c.length);
+    gif.writeFrame(frm, imgWidth, imgHeight, { palette, delay: 20 })
   }
-  //gif.writeFrame(full, width1 * 3, height1, { palette })
+  //gif.writeFrame(full, fullWidth, fullHeight, { palette })
   gif.finish()
 
   const response = new NextResponse(gif.bytesView());
