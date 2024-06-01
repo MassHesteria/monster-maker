@@ -22,8 +22,8 @@ export async function generateMetadata({ searchParams }: Props) {
 
   const metaData = await fetchMetadata(routeUrl);
   return {
-    title: "Frame of Life",
-    description: "Conway's Game of Life in a Frame",
+    title: "Monster Maker",
+    description: "Make a random monster",
     metadataBase: new URL(getHostName()),
     other: metaData,
   };
@@ -33,12 +33,12 @@ export default async function Page() {
   return (
     <div className="pl-4 pt-4">
       <center>
-      <h1 className="pb-2 text-4xl">Frame of Life <span className="text-2xl">by MassHesteria</span></h1>
+      <h1 className="pb-2 text-4xl">Monster Maker <span className="text-2xl">by MassHesteria</span></h1>
       <div>
-        <a className="text-red-600 text-2xl no-underline hover:underline pr-8" href="https://github.com/masshesteria/frame-of-life">Source code</a>
+        <a className="text-red-600 text-2xl no-underline hover:underline pr-8" href="https://github.com/masshesteria/monster-maker">Source code</a>
         <a className="text-purple-600 text-2xl no-underline hover:underline" href="https://warpcast.com/masshesteria/0x3c45cf6b">Original cast</a>
       </div>
-      <img className="mt-4 border border-black" alt="Dart" src="/image/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAoAACIAADgAAAAAAxgAEUQAYowBBQQBatAAAAAAAAAA=="></img>
+      {/*<img className="mt-4 border border-black" alt="Dart" src="/image/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAoAACIAADgAAAAAAxgAEUQAYowBBQQBatAAAAAAAAAA=="></img>*/}
       </center>
     </div>
   )

@@ -109,21 +109,22 @@ export async function GET(
   const reshaped = reshapeArray1DTo2D(full, fullHeight, fullWidth)
   
   // Compute positions for the strips
+  const stripSize = imgWidth * 200
+  const blank = new Uint8Array(stripSize).fill(palette.length - 1)
+
   const frm = new Uint8Array(imgWidth * imgHeight)
-  const blank = new Uint8Array(800 * 200).fill(palette.length - 1)
+  frm.set(cropImage(reshaped, 0, 0, imgWidth, 200))
 
   const gif = GIFEncoder()
   for (let i = 0; i < (fullWidth - 800) / 10; i++) {
-    const a = cropImage(reshaped, 0, 0, imgWidth, 200)
     const b = cropImage(reshaped, i * 10, 200, imgWidth, 200)
     const c = blank
     const d = blank
     //const c = cropImage(reshaped, 1600, 400, imgWidth, 200)
     //const d = cropImage(reshaped, 0, 600, imgWidth, 200)
-    frm.set(a, 0);
-    frm.set(b, a.length);
-    frm.set(c, a.length + b.length);
-    frm.set(d, a.length + b.length + c.length);
+    frm.set(b, stripSize);
+    frm.set(c, stripSize * 2);
+    frm.set(d, stripSize * 3);
     gif.writeFrame(frm, imgWidth, imgHeight, { palette, delay: 20 })
   }
   //gif.writeFrame(full, fullWidth, fullHeight, { palette })
