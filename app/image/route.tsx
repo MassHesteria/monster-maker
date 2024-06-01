@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
   const bot = searchParams.get('bot')
 
   const imageFiles = [
-    "public/ghost.png",
-    "public/sea-monster.png",
+    "ghost.png",
+    "sea-monster.png",
     //"public/square_green.png",
     //"public/square_blue.png",
   ]
