@@ -55,11 +55,11 @@ const cropImage = (
   return output
 };
 
-export async function GET(
-   req: NextRequest,
-   { params }: { params: { slug: string}}
-) {
-  //const searchParams = req.nextUrl.searchParams
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams
+  const top = searchParams.get('top')
+  const mid = searchParams.get('mid')
+  const bot = searchParams.get('bot')
 
   const imageFiles = [
     "public/ghost.png",
@@ -110,22 +110,48 @@ export async function GET(
   
   // Compute positions for the strips
   const stripSize = imgWidth * 200
-  const blank = new Uint8Array(stripSize).fill(palette.length - 1)
+  let startPos = 200
 
-  const frm = new Uint8Array(imgWidth * imgHeight)
+  const frm = new Uint8Array(imgWidth * imgHeight).fill(palette.length - 1)
   frm.set(cropImage(reshaped, 0, 0, imgWidth, 200))
 
+  const getIndex = (val: string|null): number => {
+    if (val == null) {
+      return -1
+    }
+    const num = parseInt(val)
+    if (num == Number.NaN) {
+      return -1
+    }
+    return num % imageFiles.length
+  }
+
+  const topIndex = getIndex(top)
+  if (topIndex >= 0) {
+    frm.set(cropImage(reshaped, topIndex * imgWidth, 200, imgWidth, 200), stripSize)
+    startPos = 400
+  }
+
+  const midIndex = getIndex(mid)
+  if (midIndex >= 0) {
+    frm.set(cropImage(reshaped, midIndex * imgWidth, 400, imgWidth, 200), stripSize * 2)
+    startPos = 600
+  }
+
+  const botIndex = getIndex(bot)
+  if (botIndex >= 0) {
+    frm.set(cropImage(reshaped, botIndex * imgWidth, 600, imgWidth, 200), stripSize * 3)
+    startPos = 800
+  }
+
   const gif = GIFEncoder()
-  for (let i = 0; i < (fullWidth - 800) / 10; i++) {
-    const b = cropImage(reshaped, i * 10, 200, imgWidth, 200)
-    const c = blank
-    const d = blank
-    //const c = cropImage(reshaped, 1600, 400, imgWidth, 200)
-    //const d = cropImage(reshaped, 0, 600, imgWidth, 200)
-    frm.set(b, stripSize);
-    frm.set(c, stripSize * 2);
-    frm.set(d, stripSize * 3);
-    gif.writeFrame(frm, imgWidth, imgHeight, { palette, delay: 20 })
+  if (startPos < 800) {
+    for (let i = 0; i < (fullWidth - 800) / 10; i++) {
+      frm.set(cropImage(reshaped, i * 10, startPos, imgWidth, 200), startPos * imgWidth);
+      gif.writeFrame(frm, imgWidth, imgHeight, { palette, delay: 20 })
+    }
+  } else {
+      gif.writeFrame(frm, imgWidth, imgHeight, { palette })
   }
   //gif.writeFrame(full, fullWidth, fullHeight, { palette })
   gif.finish()
