@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
   const bot = searchParams.get('bot')
 
   const imageFiles = [
-    "ghost.png",
-    "sea-monster.png",
+    path.join(process.cwd(), "ghost.png"),
+    path.join(process.cwd(), "sea-monster.png"),
     //"public/square_green.png",
     //"public/square_blue.png",
   ]
@@ -74,8 +74,7 @@ export async function GET(req: NextRequest) {
   const imgWidth = 800, imgHeight = 800
 
   for (let i = 0; i < imageFiles.length; i++) {
-    const fullPath = path.join(process.cwd(), imageFiles[i]);
-    const { data } = await readImage(fullPath)
+    const { data } = await readImage(imageFiles[i])
     const palette = quantize(data, 32);
     const index = applyPalette(data, palette, 'rgb444')
     for (let j = 0; j < index.length; j++) {
