@@ -73,6 +73,7 @@ export async function GET(req: NextRequest) {
   let combinedPaletteLength = 0
   const imgWidth = 800, imgHeight = 800
 
+  console.time('read')
   for (let i = 0; i < imageFiles.length; i++) {
     const { data } = await readImage(imageFiles[i])
     const palette = quantize(data, 32);
@@ -84,10 +85,14 @@ export async function GET(req: NextRequest) {
     imagePalettes.push(palette)
     combinedPaletteLength += palette.length
   }
+  console.timeEnd('read')
+  console.time('paletteMerge')
 
   const palette = imagePalettes.flat()
   palette.push([0, 0, 0])
 
+  console.timeEnd('paletteMerge')
+  console.time('combine')
   //
   imageBuffers.push(imageBuffers[0])
   const images = imageBuffers
@@ -105,14 +110,19 @@ export async function GET(req: NextRequest) {
       }
     })
   }
+  console.timeEnd('combine')
+  console.time('reshape')
   const reshaped = reshapeArray1DTo2D(full, fullHeight, fullWidth)
+  console.timeEnd('reshape')
   
+  console.time('setup')
   // Compute positions for the strips
   const stripSize = imgWidth * 200
   let startPos = 200
 
   const frm = new Uint8Array(imgWidth * imgHeight).fill(palette.length - 1)
   frm.set(cropImage(reshaped, 0, 0, imgWidth, 200))
+  console.timeEnd('setup')
 
   const getIndex = (val: string|null): number => {
     if (val == null) {
@@ -125,6 +135,7 @@ export async function GET(req: NextRequest) {
     return num % imageFiles.length
   }
 
+  console.time('index')
   const topIndex = getIndex(top)
   if (topIndex >= 0) {
     frm.set(cropImage(reshaped, topIndex * imgWidth, 200, imgWidth, 200), stripSize)
@@ -142,7 +153,9 @@ export async function GET(req: NextRequest) {
     frm.set(cropImage(reshaped, botIndex * imgWidth, 600, imgWidth, 200), stripSize * 3)
     startPos = 800
   }
+  console.timeEnd('index')
 
+  console.time('gif')
   const gif = GIFEncoder()
   if (startPos < 800) {
     for (let i = 0; i < (fullWidth - 800) / 10; i++) {
@@ -154,6 +167,7 @@ export async function GET(req: NextRequest) {
   }
   //gif.writeFrame(full, fullWidth, fullHeight, { palette })
   gif.finish()
+  console.timeEnd('gif')
 
   const response = new NextResponse(gif.bytesView());
   response.headers.set("content-type", "image/gif");
