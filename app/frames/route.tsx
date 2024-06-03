@@ -14,17 +14,21 @@ const handleRequest = frames(async (ctx: any) => {
 
   let imagePath = getHostName() + `/image?ts=${timestamp}`
   let postRoute = baseRoute + `&top=${timestamp}`
+  let buttonText = "Do Not Push 🛑"
 
   if (top) {
     imagePath += '&top=' + top
     postRoute = baseRoute + `&top=${top}&mid=${timestamp}`
+    buttonText = "Seriously, DO NOT PUSH!"
   }
   if (mid) {
     imagePath += '&mid=' + mid
     postRoute = baseRoute + `&top=${top}&mid=${mid}&bot=${timestamp}`
+    buttonText = "Last Chance, DO NOT PUSH!"
   }
   if (bot) {
     imagePath += '&bot=' + bot
+    buttonText = "Share"
   }
 
   return {
@@ -33,7 +37,7 @@ const handleRequest = frames(async (ctx: any) => {
       aspectRatio: "1:1"
     },
     buttons: [
-      <Button action="post" target = {postRoute}>👹</Button>
+      <Button action="post" target = {postRoute}>{buttonText}</Button>
     ]
   }
 })
